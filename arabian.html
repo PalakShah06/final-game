@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arabian Gate</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Scheherazade New', serif;
+      background: linear-gradient(to bottom, #1a0d0d, #302626);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen text-yellow-400 px-4"
+      style="background-image: url('option 6.jpeg'); background-size: cover; background-position: center;">
+      
+  <div class="bg-black/60 p-6 rounded-xl shadow-xl w-full max-w-md text-center border border-yellow-600">
+    <h1 class="text-2xl font-bold mb-3">🌙 Arabian Gate 🌙</h1>
+    <p class="text-sm text-yellow-300 mb-5">Enter the 4-digit secret code</p>
+
+    <input id="code" maxlength="4" class="w-full p-3 rounded text-center text-black" placeholder="Enter code" />
+    <button id="submit" class="mt-4 w-full py-2 bg-yellow-400 text-black rounded font-semibold">Submit</button>
+    <p id="msg" class="mt-4 min-h-[2rem] text-sm"></p>
+  </div>
+
+  <script>
+    const PASS = "5149";
+    const delays = [10, 20, 30, 45, 60, 75];
+    const extraDelay = 90;
+
+    const state = JSON.parse(localStorage.getItem("gateState") || '{"tries":0,"lock":0}');
+    const input = document.getElementById("code");
+    const btn = document.getElementById("submit");
+    const msg = document.getElementById("msg");
+
+    function lockUI(s) {
+      const unlockAt = Date.now() + s * 1000;
+      state.lock = unlockAt;
+      localStorage.setItem("gateState", JSON.stringify(state));
+      updateCountdown();
+    }
+
+    function updateCountdown() {
+      const now = Date.now();
+      const diff = Math.ceil((state.lock - now) / 1000);
+      if (diff > 0) {
+        msg.innerHTML = `⏳ Wait ${Math.floor(diff / 60)}m ${diff % 60}s`;
+        btn.disabled = input.disabled = true;
+        setTimeout(updateCountdown, 1000);
+      } else {
+        msg.textContent = "";
+        btn.disabled = input.disabled = false;
+        state.lock = 0;
+        localStorage.setItem("gateState", JSON.stringify(state));
+      }
+    }
+
+    btn.onclick = () => {
+      const val = input.value.trim();
+      if (state.lock > Date.now()) return;
+
+      if (val === PASS) {
+        msg.innerHTML = "✅ <span class='text-green-400'>You have cracked the code!</span>";
+        localStorage.removeItem("gateState");
+        btn.disabled = input.disabled = true;
+        return;
+      }
+
+      state.tries++;
+      const wait = state.tries <= delays.length ? delays[state.tries - 1] : extraDelay;
+      lockUI(wait);
+      msg.innerHTML = `❌ <span class='text-red-400'>Wrong password! Wait ${wait}s</span>`;
+      localStorage.setItem("gateState", JSON.stringify(state));
+      input.value = "";
+    };
+
+    // On load: restore lock if active
+    if (state.lock > Date.now()) {
+      updateCountdown();
+      btn.disabled = input.disabled = true;
+    }
+  </script>
+</body>
+</html>
